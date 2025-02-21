@@ -1,0 +1,110 @@
+# Passo a Passo para Implementar o Grafana no OpenShift
+
+## Pré-requisitos
+- Cluster OpenShift 4.x ou superior
+- Acesso de administrador ao cluster
+- Cliente `oc` instalado e configurado
+
+## Implantar o Grafana em um Namespace Existente
+- Você pode implantar o Grafana em um namespace já existente. Para isso, altere o campo `namespace` nos arquivos de configuração para o namespace desejado.
+
+### Exemplo de Alteração nos Arquivos
+- **No arquivo `grafana-deployment.yaml`**:
+```yaml
+metadata:
+  name: grafana
+  namespace: meu-namespace
+```
+
+- **No arquivo `grafana-pvc.yaml`**:
+```yaml
+metadata:
+  name: grafana-pvc
+  namespace: meu-namespace
+```
+
+- **No arquivo `grafana-service.yaml`**:
+```yaml
+metadata:
+  name: grafana
+  namespace: meu-namespace
+```
+
+- **No arquivo `grafana-route.yaml`**:
+```yaml
+metadata:
+  name: grafana
+  namespace: meu-namespace
+```
+
+### Comandos para Aplicar os Arquivos
+```bash
+oc apply -f grafana-pvc.yaml -n meu-namespace
+oc apply -f grafana-deployment.yaml -n meu-namespace
+oc apply -f grafana-service.yaml -n meu-namespace
+oc apply -f grafana-route.yaml -n meu-namespace
+```
+oc apply -f grafana-route.yaml -n meu-namespace
+  namespace: meu-namespace
+  namespace: meu-namespace
+  namespace: meu-namespace
+  namespace: meu-namespace
+
+## Aplicar os arquivos de configuração na seguinte ordem
+```bash
+oc apply -f grafana-pvc.yaml
+oc apply -f grafana-deployment.yaml
+oc apply -f grafana-service.yaml
+oc apply -f grafana-route.yaml
+```
+
+## Verificar se os pods estão em execução
+```bash
+oc get pods -n monitoring
+```
+
+## Obter a URL do Grafana
+```bash
+oc get route grafana -n monitoring
+```
+
+## Acessar o Grafana
+- Use a URL obtida no comando anterior.
+- Credenciais padrão:
+  - Usuário: admin
+  - Senha: admin
+- Na primeira vez que você fizer login, será solicitado que você altere a senha.
+
+## Configuração adicional de segurança (recomendado)
+```bash
+# Criar secret para credenciais personalizadas
+oc create secret generic grafana-credentials \
+  --from-literal=username=seu_usuario \
+  --from-literal=password=sua_senha \
+  -n monitoring
+```
+
+## Dicas Importantes
+
+### Monitoramento
+```bash
+# Verificar logs do pod
+oc logs -f deployment/grafana -n monitoring
+
+# Verificar status do deployment
+oc get deployment grafana -n monitoring
+```
+
+### Backup (recomendado)
+```bash
+# Exportar configurações
+oc exec -n monitoring $(oc get pods -n monitoring -l app=grafana -o name) -- tar czf /tmp/grafana-backup.tar.gz /var/lib/grafana
+
+# Copiar backup para máquina local
+oc cp monitoring/$(oc get pods -n monitoring -l app=grafana -o name):/tmp/grafana-backup.tar.gz ./grafana-backup.tar.gz
+```
+
+### Segurança
+- Altere a senha padrão imediatamente.
+- Configure autenticação LDAP se disponível.
+- Use HTTPS para acesso externo.
